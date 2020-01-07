@@ -38,11 +38,73 @@ devtools::install_github("tomasbarcellos/walle")
 ```
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+Antes de mais nada vamos pegar os dados das ações com formato padronizado 
+e de acordo com o esperado pelo pacote `tidyquat`.
 
 ```{r example}
-# library(walle)
-## basic example code
-# Sem exemplo, irmão
+library(walle)
+acoes <- c("^BVSP", "ITUB4.SA", "BBAS3.SA", "PETR4.SA", "VALE3.SA")
+dados <- pegar_acoes(acoes)
+```
+
+Agora é hora analisar a performance dessas ações:
+
+```{r}
+library(tidyverse, warn.conflicts = FALSE)
+library(tidyquant)
+RaRb <- criar_RaRb(dados, "monthly")
+RaRb %>%
+  tq_performance(Ra = Ra, Rb = Rb,
+                 performance_fun = table.CAPM)
+
+Ra <- criar_Ra(dados)
+
+Ra %>%
+  summarise(media = mean(Ra), desv = sd(Ra),
+            cv = desv / media) %>%
+  arrange(desc(media))
+
+ggplot(Ra, aes(date, Ra, col = symbol)) +
+  geom_line()
+```
+
+Podemos repetir a análise para um período mais recente:
+
+```{r}
+Ra %>%
+  filter(date >= as.Date("2015-01-01")) %>%
+  summarise(media = mean(Ra), desv = sd(Ra),
+            cv = desv / media) %>%
+  arrange(desc(media))
+
+ggplot(Ra %>% filter(date >= as.Date("2015-01-01")),
+       aes(date, Ra, col = symbol)) +
+  geom_line()
+```
+
+Ou pode usar o objeto `acoes_yahoo` para análisar todas as ações listadas 
+na B3.
+
+```{r}
+dez_primeiras <- acoes_yahoo %>%
+  head(10) %>%
+  pull(1) %>%
+  pegar_acoes(from = "2013-07-01")
+
+RaRb <- criar_RaRb(dez_primeiras, "monthly")
+
+RaRb %>%
+  tq_performance(Ra = Ra, Rb = Rb,
+                 performance_fun = table.CAPM)
+
+Ra <- criar_Ra(dez_primeiras)
+
+Ra %>%
+  summarise(media = mean(Ra), desv = sd(Ra),
+            cv = desv / media) %>%
+  arrange(desc(media))
+
+ggplot(Ra, aes(date, Ra, col = symbol)) +
+  geom_line()
 ```
 
